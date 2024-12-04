@@ -1,8 +1,10 @@
-const SHEET_ID = '1xQyEY0SD9NpApKhof_Y85tXVdrkaCoaCD_ltTs6h-6w'; // 여기에 구글 시트 ID를 넣으세요
+const SHEET_ID = '1xQyEY0SD9NpApKhof_Y85tXVdrkaCoaCD_ltTs6h-6w'; // 여기에 실제 구글 시트 ID를 넣으세요
 const SHEET_NAME = 'Sheet1';
 const SHEET_RANGE = 'B2:D';
 
 let currentWord = '';
+let currentMeaning = '';
+let currentExample = '';
 
 async function fetchSheetData() {
     const response = await fetch(
@@ -24,6 +26,9 @@ async function loadNewQuestion() {
         const question = data[randomIndex];
         
         currentWord = question.word;
+        currentMeaning = question.meaning;
+        currentExample = question.example;
+        
         document.querySelector('.meaning').textContent = question.meaning;
         document.getElementById('answer').value = '';
         document.querySelector('.result').style.display = 'none';
@@ -52,6 +57,11 @@ function checkAnswer() {
     
     const message = messages[Math.floor(Math.random() * messages.length)];
     document.querySelector('.message').textContent = message;
+    
+    // 단어 정보 표시 부분 추가
+    document.querySelector('.word-meaning').textContent = 
+        `${currentWord} : ${currentMeaning}`;
+    document.querySelector('.example').textContent = currentExample;
     
     resultDiv.style.display = 'block';
     setTimeout(loadNewQuestion, 3000);
