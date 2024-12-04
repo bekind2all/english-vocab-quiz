@@ -1,4 +1,4 @@
-const SHEET_ID = '1xQyEY0SD9NpApKhof_Y85tXVdrkaCoaCD_ltTs6h-6w'; // 여기에 실제 구글 시트 ID를 넣으세요
+const SHEET_ID = '1xQyEY0SD9NpApKhof_Y85tXVdrkaCoaCD_ltTs6h-6w';
 const SHEET_NAME = 'Sheet1';
 const SHEET_RANGE = 'B2:D';
 
@@ -7,21 +7,36 @@ let currentMeaning = '';
 let currentExample = '';
 
 async function fetchSheetData() {
-    const response = await fetch(
-        `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${SHEET_RANGE}`
-    );
-    const text = await response.text();
-    const data = JSON.parse(text.substring(47).slice(0, -2));
-    return data.table.rows.map(row => ({
-        word: row.c[0]?.v || '',
-        meaning: row.c[1]?.v || '',
-        example: row.c[2]?.v || ''
-    }));
+    try {
+        const response = await fetch(
+            `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}&range=${SHEET_RANGE}`
+        );
+        const csvText = await response.text();
+        // CSV 파싱
+        const rows = csvText.split('\n').map(row => {
+            // 쉼표로 구분하되, 쌍따옴표 안의 쉼표는 무시
+            const matches = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+            return matches.map(cell => cell.replace(/^"|"$/g, ''));
+        });
+        return rows.map(row => ({
+            word: row[0] || '',
+            meaning: row[1] || '',
+            example: row[2] || ''
+        }));
+    } catch (error) {
+        console.error('Error fetching sheet data:', error);
+        return [];
+    }
 }
 
 async function loadNewQuestion() {
     try {
         const data = await fetchSheetData();
+        if (data.length === 0) {
+            alert('데이터를 불러오는 데 실패했습니다.');
+            return;
+        }
+
         const randomIndex = Math.floor(Math.random() * data.length);
         const question = data[randomIndex];
         
@@ -58,10 +73,16 @@ function checkAnswer() {
     const message = messages[Math.floor(Math.random() * messages.length)];
     document.querySelector('.message').textContent = message;
     
-    // 단어 정보 표시 부분 추가
-    document.querySelector('.word-meaning').textContent = 
-        `${currentWord} : ${currentMeaning}`;
-    document.querySelector('.example').textContent = currentExample;
+    // 단어 정보 표시
+    const wordInfoDiv = document.querySelector('.word-meaning');
+    const exampleDiv = document.querySelector('.example');
+    
+    if (wordInfoDiv && exampleDiv) {
+        wordInfoDiv.textContent = `${currentWord} : ${currentMeaning}`;
+        exampleDiv.textContent = currentExample;
+    } else {
+        console.error('Word info or example div not found');
+    }
     
     resultDiv.style.display = 'block';
     setTimeout(loadNewQuestion, 3000);
